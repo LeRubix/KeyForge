@@ -138,7 +138,7 @@ class PasswordGeneratorApp(QMainWindow):
         if website.strip() and password.strip():
             if not os.path.exists('manager_credentials.bin'):
                 error_message = "Error: KeyForge Chain Password Manager not found. Move it into the same folder as KeyForge.exe or if you haven't installed it, please download the manager from the GitHub repository.\nKeyForge should automatically come with KeyForge Chain."
-                github_link = "https://github.com/your-github-repo"
+                github_link = "https://github.com/LeRubix/KeyForge-Chain"
                 
                 # Show an error message with a hyperlink to GitHub
                 QMessageBox.critical(self, "Error", f"{error_message}\n\nYou can download it from <a href=\"{github_link}\">{github_link}</a>")
