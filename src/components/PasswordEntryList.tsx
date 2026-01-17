@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trash2, Globe, User, Copy } from 'lucide-react';
+import { Trash2, Globe, User, Copy, Pin } from 'lucide-react';
 import { PasswordEntry } from '@/utils/storage';
 import { ViewMode } from './VaultScreen';
 import { t } from '@/utils/i18n';
@@ -10,6 +10,7 @@ interface PasswordEntryListProps {
   onSelect: (entry: PasswordEntry) => void;
   onDelete: (id: string) => void;
   onCopyPassword?: (password: string) => void;
+  onTogglePin?: (id: string) => void;
   viewMode?: ViewMode;
 }
 
@@ -19,6 +20,7 @@ export function PasswordEntryList({
   onSelect,
   onDelete,
   onCopyPassword,
+  onTogglePin,
   viewMode = 'compact',
 }: PasswordEntryListProps) {
   const [, setLanguageKey] = useState(0);
@@ -81,25 +83,51 @@ export function PasswordEntryList({
               }}
             >
               <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="font-medium truncate text-sm" style={{ color: 'var(--text-primary)' }}>
-                  {entry.title || t('form.untitled')}
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {entry.pinned && (
+                    <Pin className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--color-primary)' }} fill="currentColor" />
+                  )}
+                  <div className="font-medium truncate text-sm" style={{ color: 'var(--text-primary)' }}>
+                    {entry.title || t('form.untitled')}
+                  </div>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(entry.id);
-                  }}
-                  className="transition-colors p-1 flex-shrink-0"
-                  style={{ color: 'var(--text-secondary)' }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = '#ef4444';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = 'var(--text-secondary)';
-                  }}
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
+                <div className="flex items-center gap-1">
+                  {onTogglePin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTogglePin(entry.id);
+                      }}
+                      className="transition-colors p-1 flex-shrink-0"
+                      style={{ color: entry.pinned ? 'var(--color-primary)' : 'var(--text-secondary)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = 'var(--color-primary)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = entry.pinned ? 'var(--color-primary)' : 'var(--text-secondary)';
+                      }}
+                      title={entry.pinned ? t('vault.unpin') : t('vault.pin')}
+                    >
+                      <Pin className="w-3 h-3" fill={entry.pinned ? 'currentColor' : 'none'} />
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(entry.id);
+                    }}
+                    className="transition-colors p-1 flex-shrink-0"
+                    style={{ color: 'var(--text-secondary)' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#ef4444';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'var(--text-secondary)';
+                    }}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
               {entry.username && (
                 <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
@@ -138,8 +166,13 @@ export function PasswordEntryList({
             >
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-base mb-2" style={{ color: 'var(--text-primary)' }}>
-                    {entry.title || t('form.untitled')}
+                  <div className="flex items-center gap-2 mb-2">
+                    {entry.pinned && (
+                      <Pin className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-primary)' }} fill="currentColor" />
+                    )}
+                    <div className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
+                      {entry.title || t('form.untitled')}
+                    </div>
                   </div>
                   <div className="space-y-1.5 text-sm">
                     {entry.username && (
@@ -162,6 +195,25 @@ export function PasswordEntryList({
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
+                  {onTogglePin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTogglePin(entry.id);
+                      }}
+                      className="transition-colors p-2 flex-shrink-0"
+                      style={{ color: entry.pinned ? 'var(--color-primary)' : 'var(--text-secondary)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = 'var(--color-primary)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = entry.pinned ? 'var(--color-primary)' : 'var(--text-secondary)';
+                      }}
+                      title={entry.pinned ? t('vault.unpin') : t('vault.pin')}
+                    >
+                      <Pin className="w-4 h-4" fill={entry.pinned ? 'currentColor' : 'none'} />
+                    </button>
+                  )}
                   {onCopyPassword && (
                     <button
                       onClick={(e) => {
@@ -230,8 +282,13 @@ export function PasswordEntryList({
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <div className="font-medium truncate mb-1" style={{ color: 'var(--text-primary)' }}>
-                  {entry.title || t('form.untitled')}
+                <div className="flex items-center gap-2 mb-1">
+                  {entry.pinned && (
+                    <Pin className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--color-primary)' }} fill="currentColor" />
+                  )}
+                  <div className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                    {entry.title || t('form.untitled')}
+                  </div>
                 </div>
                 <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
                   {entry.username && (
@@ -249,6 +306,25 @@ export function PasswordEntryList({
                 </div>
               </div>
               <div className="flex items-center gap-1">
+                {onTogglePin && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTogglePin(entry.id);
+                    }}
+                    className="transition-colors p-1 flex-shrink-0"
+                    style={{ color: entry.pinned ? 'var(--color-primary)' : 'var(--text-secondary)' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = 'var(--color-primary)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = entry.pinned ? 'var(--color-primary)' : 'var(--text-secondary)';
+                    }}
+                    title={entry.pinned ? t('vault.unpin') : t('vault.pin')}
+                  >
+                    <Pin className="w-3 h-3" fill={entry.pinned ? 'currentColor' : 'none'} />
+                  </button>
+                )}
                 {onCopyPassword && (
                   <button
                     onClick={(e) => {

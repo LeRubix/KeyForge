@@ -8,6 +8,7 @@ export interface PasswordEntry {
   password: string;
   url?: string;
   notes?: string;
+  pinned?: boolean;
   createdAt: number;
   updatedAt: number;
 }

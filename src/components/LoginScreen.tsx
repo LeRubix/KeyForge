@@ -19,7 +19,6 @@ export function LoginScreen({ onLogin, isNewUser, onNewUserCreated }: LoginScree
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isRateLimited, setIsRateLimited] = useState(false);
   const [colorMode, setColorMode] = useState(getColorMode());
   const [loading, setLoading] = useState(false);
   const [useRecoveryPhrase, setUseRecoveryPhrase] = useState(false);
@@ -50,10 +49,9 @@ export function LoginScreen({ onLogin, isNewUser, onNewUserCreated }: LoginScree
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsRateLimited(false);
     setLoading(true);
 
-    const { checkRateLimit } = await import('@/utils/security');
+    const { checkRateLimit, getRemainingAttempts } = await import('@/utils/security');
     const rateLimitKey = 'login_attempts';
     const maxAttempts = 5;
     const windowMs = 15 * 60 * 1000;
@@ -61,7 +59,6 @@ export function LoginScreen({ onLogin, isNewUser, onNewUserCreated }: LoginScree
     if (!checkRateLimit(rateLimitKey, maxAttempts, windowMs)) {
       const resetTime = new Date(Date.now() + windowMs).toLocaleTimeString();
       setError(`Too many login attempts. Please try again later. (Resets at ${resetTime})`);
-      setIsRateLimited(true);
       setLoading(false);
       return;
     }
@@ -122,7 +119,6 @@ export function LoginScreen({ onLogin, isNewUser, onNewUserCreated }: LoginScree
             const { clearRateLimit } = await import('@/utils/security');
             const { clearSensitiveString } = await import('@/utils/clipboard');
             clearRateLimit(rateLimitKey);
-            setIsRateLimited(false);
             await setMasterPasswordHash(recoveryKey);
             onLogin(recoveryKey);
             setTimeout(() => {
@@ -130,7 +126,8 @@ export function LoginScreen({ onLogin, isNewUser, onNewUserCreated }: LoginScree
               recoveryPhrase.forEach(w => clearSensitiveString(w));
             }, 100);
           } else {
-            setError('Invalid recovery phrase or vault cannot be decrypted');
+            const remainingAttempts = getRemainingAttempts(rateLimitKey, maxAttempts);
+            setError(`Invalid recovery phrase or vault cannot be decrypted. ${remainingAttempts > 0 ? `${remainingAttempts} attempt${remainingAttempts !== 1 ? 's' : ''} remaining.` : 'No attempts remaining.'}`);
           }
         } else {
           const vault = await readVault(password);
@@ -139,19 +136,20 @@ export function LoginScreen({ onLogin, isNewUser, onNewUserCreated }: LoginScree
             const { clearRateLimit } = await import('@/utils/security');
             const { clearSensitiveString } = await import('@/utils/clipboard');
             clearRateLimit(rateLimitKey);
-            setIsRateLimited(false);
             await setMasterPasswordHash(password);
             onLogin(password);
             setTimeout(() => {
               clearSensitiveString(password);
             }, 100);
           } else {
-            setError(t('login.error.incorrectPassword'));
+            const remainingAttempts = getRemainingAttempts(rateLimitKey, maxAttempts);
+            setError(`${t('login.error.incorrectPassword')} ${remainingAttempts > 0 ? `${remainingAttempts} attempt${remainingAttempts !== 1 ? 's' : ''} remaining.` : 'No attempts remaining.'}`);
           }
         }
       }
     } catch (err) {
-      setError('Authentication failed. Please check your credentials.');
+      const remainingAttempts = getRemainingAttempts(rateLimitKey, maxAttempts);
+      setError(`Authentication failed. Please check your credentials. ${remainingAttempts > 0 ? `${remainingAttempts} attempt${remainingAttempts !== 1 ? 's' : ''} remaining.` : 'No attempts remaining.'}`);
     } finally {
       setLoading(false);
     }
@@ -459,22 +457,6 @@ export function LoginScreen({ onLogin, isNewUser, onNewUserCreated }: LoginScree
             {error && (
               <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm">
                 {error}
-                {import.meta.env.DEV && isRateLimited && (
-                  <div className="mt-2">
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const { clearRateLimit } = await import('@/utils/security');
-                        clearRateLimit('login_attempts');
-                        setIsRateLimited(false);
-                        setError(null);
-                      }}
-                      className="text-xs underline hover:text-red-300"
-                    >
-                      Dev: reset login attempts
-                    </button>
-                  </div>
-                )}
               </div>
             )}
 

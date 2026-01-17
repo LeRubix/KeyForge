@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, LogOut, Lock, Download, Key, Settings, Grid3x3, List, LayoutGrid } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Plus, Search, Lock, Download, Key, Settings, Grid3x3, List, LayoutGrid } from 'lucide-react';
 import { useVault } from '@/hooks/useVault';
 import { PasswordEntryList } from './PasswordEntryList';
 import { PasswordEntryForm } from './PasswordEntryForm';
@@ -20,7 +20,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'date-newest' | 'date-oldest
 export type ViewMode = 'grid' | 'compact' | 'expanded';
 
 export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
-  const { vault, loading, addEntry, updateEntry, deleteEntry } = useVault(masterPassword);
+  const { vault, loading, addEntry, addEntries, updateEntry, deleteEntry } = useVault(masterPassword);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEntry, setSelectedEntry] = useState<PasswordEntry | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -33,6 +33,10 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [, setLanguageKey] = useState(0);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(384); // 96 * 4 = 384px (w-96)
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const MIN_SIDEBAR_WIDTH = 300; // Slightly smaller than current 384px
 
   useEffect(() => {
     initializeTheme();
@@ -60,24 +64,31 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
         entry.notes?.toLowerCase().includes(query)
     );
 
-    filtered = [...filtered].sort((a, b) => {
-      switch (sortOption) {
-        case 'name-asc':
-          return a.title.localeCompare(b.title);
-        case 'name-desc':
-          return b.title.localeCompare(a.title);
-        case 'date-newest':
-          return b.updatedAt - a.updatedAt;
-        case 'date-oldest':
-          return a.updatedAt - b.updatedAt;
-        case 'username-asc':
-          return a.username.localeCompare(b.username);
-        default:
-          return 0;
-      }
-    });
+    // Separate pinned and unpinned entries
+    const pinned = filtered.filter((e: PasswordEntry) => e.pinned);
+    const unpinned = filtered.filter((e: PasswordEntry) => !e.pinned);
 
-    return filtered;
+    // Sort each group
+    const sortEntries = (entries: PasswordEntry[]) => {
+      return [...entries].sort((a, b) => {
+        switch (sortOption) {
+          case 'name-asc':
+            return a.title.localeCompare(b.title);
+          case 'name-desc':
+            return b.title.localeCompare(a.title);
+          case 'date-newest':
+            return b.updatedAt - a.updatedAt;
+          case 'date-oldest':
+            return a.updatedAt - b.updatedAt;
+          case 'username-asc':
+            return a.username.localeCompare(b.username);
+          default:
+            return 0;
+        }
+      });
+    };
+
+    return [...sortEntries(pinned), ...sortEntries(unpinned)];
   }, [vault, searchQuery, passwords, sortOption]);
 
   const handleAddEntry = () => {
@@ -130,6 +141,42 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
     }
   }, [vault, selectedEntry, showForm, isCreatingNew]);
 
+  // Sidebar resize handlers
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const newWidth = e.clientX;
+      if (newWidth >= MIN_SIDEBAR_WIDTH) {
+        setSidebarWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, MIN_SIDEBAR_WIDTH]);
+
+  const handleTogglePin = async (id: string) => {
+    const entry = passwords.find((p: PasswordEntry) => p.id === id);
+    if (entry) {
+      await updateEntry(id, { pinned: !entry.pinned });
+    }
+  };
+
   const handleDeleteEntry = async (id: string) => {
             if (confirm(t('form.deleteConfirm'))) {
       await deleteEntry(id);
@@ -152,13 +199,64 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
     <>
       {copySuccess && <ErrorToast message={t('form.copySuccess')} onClose={() => setCopySuccess(false)} type="success" />}
       <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="w-96 flex flex-col" style={{ backgroundColor: 'var(--bg-surface)', borderRight: '1px solid var(--border-color)' }}>
+        <div 
+          ref={sidebarRef}
+          className="flex flex-col relative" 
+          style={{ 
+            width: `${sidebarWidth}px`,
+            backgroundColor: 'var(--bg-surface)', 
+            borderRight: '1px solid var(--border-color)',
+            minWidth: `${MIN_SIDEBAR_WIDTH}px`,
+          }}
+        >
         <div className="p-6" style={{ borderBottom: '1px solid var(--border-color)' }}>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'var(--color-primary-gradient, var(--color-primary))', backgroundColor: 'var(--color-primary-gradient, var(--color-primary))' }}>
-              <Key className="w-5 h-5 text-white" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'var(--color-primary-gradient, var(--color-primary))', backgroundColor: 'var(--color-primary-gradient, var(--color-primary))' }}>
+                <Key className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>KeyForge</h1>
             </div>
-            <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>KeyForge</h1>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowSettings(true)}
+                className="w-8 h-8 flex items-center justify-center rounded transition-colors"
+                style={{ 
+                  backgroundColor: 'var(--bg-surface-hover)',
+                  color: 'var(--text-secondary)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }}
+                title={t('vault.settings')}
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+              <button
+                onClick={onLogout}
+                className="w-8 h-8 flex items-center justify-center rounded transition-colors"
+                style={{ 
+                  backgroundColor: 'var(--bg-surface-hover)',
+                  color: 'var(--text-secondary)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }}
+                title={t('vault.lock')}
+              >
+                <Lock className="w-4 h-4" />
+              </button>
+            </div>
           </div>
           
           <div className="space-y-2">
@@ -294,26 +392,18 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
             onSelect={handleViewEntry}
             onDelete={handleDeleteEntry}
             onCopyPassword={handleCopyPassword}
+            onTogglePin={handleTogglePin}
             viewMode={viewMode}
           />
         </div>
-
-        <div className="p-4 space-y-2" style={{ borderTop: '1px solid var(--border-color)' }}>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="btn-secondary w-full flex items-center justify-center gap-2"
-          >
-            <Settings className="w-4 h-4" />
-            {t('vault.settings')}
-          </button>
-          <button
-            onClick={onLogout}
-            className="btn-secondary w-full flex items-center justify-center gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            {t('vault.lock')}
-          </button>
-        </div>
+        {/* Resize handle */}
+        <div
+          onMouseDown={() => setIsResizing(true)}
+          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors"
+          style={{
+            backgroundColor: isResizing ? 'var(--color-primary)' : 'transparent',
+          }}
+        />
       </div>
 
       <div className="flex-1 flex flex-col">
@@ -372,9 +462,7 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
         <ImportDialog
           onClose={() => setShowImport(false)}
           onImport={async (entries) => {
-            for (const entry of entries) {
-              await addEntry(entry);
-            }
+            await addEntries(entries);
             setShowImport(false);
           }}
         />

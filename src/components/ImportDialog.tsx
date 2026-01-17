@@ -59,8 +59,7 @@ export function ImportDialog({ onClose, onImport }: ImportDialogProps) {
     return () => window.removeEventListener('languagechange', handleLanguageChange);
   }, []);
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const processFile = async (file: File) => {
     if (!file) return;
 
     setImporting(true);
@@ -82,6 +81,13 @@ export function ImportDialog({ onClose, onImport }: ImportDialogProps) {
       setError(err instanceof Error ? err.message : 'Failed to import file');
     } finally {
       setImporting(false);
+    }
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await processFile(file);
     }
   };
 
@@ -419,7 +425,38 @@ export function ImportDialog({ onClose, onImport }: ImportDialogProps) {
           </div>
 
           {preview.length === 0 && (
-            <div className="border-2 border-dashed rounded-lg p-8 text-center" style={{ borderColor: 'var(--border-color)' }}>
+            <div 
+              className="border-2 border-dashed rounded-lg p-8 text-center transition-colors"
+              style={{ 
+                borderColor: 'var(--border-color)',
+                backgroundColor: 'var(--bg-surface)',
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.currentTarget.style.borderColor = 'var(--color-primary)';
+                e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)';
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+                e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+              }}
+              onDrop={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+                e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                
+                const file = e.dataTransfer.files?.[0];
+                if (file && (file.name.endsWith('.csv') || file.type === 'text/csv')) {
+                  await processFile(file);
+                } else if (file) {
+                  setError('Please drop a CSV file');
+                }
+              }}
+            >
               <input
                 ref={fileInputRef}
                 type="file"

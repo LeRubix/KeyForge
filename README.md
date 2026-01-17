@@ -1,16 +1,17 @@
-# Keyforge Password Manager
+# KeyForge
 
-Keyforge is a secure password manager that runs on your computer. It helps you store and manage all your passwords in one safe place. Everything is encrypted and stored only on your computer, so your passwords never leave your device.
+KeyForge is a secure password manager that runs on your computer. It helps you store and manage all your passwords in one safe place. Everything is encrypted and stored only on your computer, so your passwords never leave your device.
 
-## What is Keyforge?
+## What is KeyForge?
 
-Keyforge is like a digital safe for your passwords. Instead of remembering dozens of different passwords, you only need to remember one master password. Keyforge stores all your other passwords safely and securely.
+KeyForge is like a digital safe for your passwords. Instead of remembering dozens of different passwords, you only need to remember one master password. KeyForge stores all your other passwords safely and securely. <br>
+Do you use a browser that doesn't save your passwords, or even just multiple browsers? Have you ever wanted completely local highest-level encryption and robust security with no strings attached? Have you ever just wanted a central place on your pc to store passwords? and all of that for free? KeyForge hopes to be the answer to those questions, and more :)
 
 ## Key Features
 
 ### Security
 
-Keyforge uses the strongest encryption available to protect your passwords:
+KeyForge uses the strongest encryption available to protect your passwords:
 
 - All your passwords are encrypted using military-grade encryption
 - Your master password is processed 600,000 times to make it nearly impossible to crack
@@ -48,22 +49,21 @@ Keyforge uses the strongest encryption available to protect your passwords:
 
 ### Download Pre-built Version
 
-The easiest way to get Keyforge is to download the latest pre-built version from the releases section. Pre-built versions are available for:
+The easiest way to get KeyForge is to download the latest pre-built version from the releases section. Pre-built versions are available for:
 
 - Windows (portable .exe and installer)
-- Linux (AppImage and .deb package for Ubuntu/Mint)
-- macOS (.dmg file)
+- ~~Linux (AppImage and .deb package for Ubuntu/Mint)~~ *to do*
 
 These versions run without requiring Node.js or any other dependencies. Just download and run.
 
 ### Building from Source
 
-If you want to build Keyforge yourself, you will need:
+If you want to build KeyForge yourself, you will need:
 
 - Node.js version 18 or higher
 - npm (comes with Node.js)
 
-If you do not have these installed, visit nodejs.org to download and install Node.js for your computer.
+If you do not have these installed, visit nodejs.org to download and install Node.js.
 
 ### Installation Steps (Building from Source)
 
@@ -71,9 +71,9 @@ If you do not have these installed, visit nodejs.org to download and install Nod
 
 2. Open a terminal or command prompt on your computer
 
-3. Navigate to the Keyforge folder. Type this command:
+3. Navigate to the KeyForge folder. Type this command:
 ```
-cd Keyforge2
+cd KeyForge
 ```
 
 4. Install the required software. Type this command:
@@ -87,15 +87,15 @@ This may take a few minutes. Wait until it finishes.
 npm run dev
 ```
 
-The Keyforge application should now open on your computer.
+The KeyForge application should now open on your computer.
 
 ### Building for Production
 
-Keyforge can be built as a single executable file that runs without installation. This makes it easy to use on any computer.
+KeyForge can be built as a single executable file that runs without installation. This makes it easy to use on any computer.
 
 #### Building for Your Current Platform
 
-1. Make sure you are in the Keyforge2 folder
+1. Make sure you are in the KeyForge folder
 
 2. Type this command:
 ```
@@ -115,20 +115,20 @@ Note: For most users, it is easier to download a pre-built version from the rele
 
 #### Single File Executables
 
-Keyforge builds as a single executable file on each platform:
+KeyForge builds as a single executable file on each platform:
 
 - **Windows**: A portable .exe file that runs without installation. Just double-click to run.
 - **Linux**: An AppImage file that runs without installation. Make it executable and double-click to run.
 - **Linux (Ubuntu/Mint)**: A .deb package for easy installation via package manager.
 - **macOS**: A .dmg file for installation.
 
-The single file contains everything needed to run Keyforge. You do not need to install Node.js or any other software on the computer where you run it.
+The single file contains everything needed to run KeyForge. You do not need to install Node.js or any other software on the computer where you run it.
 
-## How to Use Keyforge
+## How to Use KeyForge
 
 ### First Time Setup
 
-When you first open Keyforge:
+When you first open KeyForge:
 
 1. You will see a screen asking you to create a master password
 2. Select your preferred language from the dropdown in the top-right corner (defaults to English 🇬🇧)
@@ -140,7 +140,7 @@ When you first open Keyforge:
 4. Type your master password again to confirm it
 5. Your password vault will be created automatically
 
-Important: Remember your master password. If you forget it, you can use your recovery phrase (available in Settings) to regain access. Keyforge does not store your master password anywhere.
+Important: Remember your master password. If you forget it, you can use your recovery phrase (available in Settings) to regain access. KeyForge does not store your master password anywhere.
 
 ### Adding a Password
 
@@ -155,7 +155,7 @@ Important: Remember your master password. If you forget it, you can use your rec
 
 ### Generating a Strong Password
 
-Keyforge can create strong, random passwords for you:
+KeyForge can create strong, random passwords for you:
 
 1. When adding or editing a password, click the "Generate" button next to the password field
 2. A password generator window will open
@@ -176,16 +176,16 @@ If you have passwords saved in Chrome, Firefox, or Edge, you can import them:
 
 1. First, export your passwords from your browser:
    - Chrome: Settings > Passwords > Export passwords
-   - Firefox: Settings > Privacy & Security > Saved Logins > Export
+   - Firefox: Passwords > Export passwords
    - Edge: Settings > Profiles > Passwords > Export
    
    Save the file as a CSV file.
 
-2. In Keyforge, click the "Import" button in the sidebar
+2. In KeyForge, click the "Import" button in the sidebar
 
 3. Click "Choose File" and select the CSV file you exported
 
-4. Keyforge will show you all the passwords it found
+4. KeyForge will show you all the passwords it found
 
 5. Check the boxes next to the passwords you want to import
 
@@ -204,7 +204,7 @@ Type in the search box at the top of the sidebar to find passwords quickly. You 
 
 ### Locking Your Vault
 
-When you are done using Keyforge, click "Lock Vault" at the bottom of the sidebar. This will lock your vault and require your master password (or recovery phrase) to open it again.
+When you are done using KeyForge, click "Lock Vault" at the bottom of the sidebar. This will lock your vault and require your master password (or recovery phrase) to open it again.
 
 ### Changing Your Master Password
 
@@ -221,7 +221,7 @@ Important: Make sure you remember your new master password or have your recovery
 
 ### Recovery Phrase
 
-Keyforge provides a 15-word recovery phrase that you can use to regain access if you forget your master password:
+KeyForge provides a 15-word recovery phrase that you can use to regain access if you forget your master password:
 
 1. Go to Settings
 2. Find the "Recovery Phrase" section
@@ -245,7 +245,7 @@ Your master password is the key to all your other passwords. Make it strong:
 - Do not use personal information like your name or birthday
 - Do not reuse this password anywhere else
 
-Keyforge requires your master password to meet these minimum requirements for security.
+KeyForge requires your master password to meet these minimum requirements for security.
 
 ### Keeping Your Master Password Safe
 
@@ -262,14 +262,14 @@ Your password vault is stored on your computer. Consider making a backup:
 - You can copy this file to a USB drive or cloud storage (it is encrypted, so it is safe)
 - Keep backups in multiple safe places
 
-## How Keyforge Protects Your Passwords
+## How KeyForge Protects Your Passwords
 
 ### Encryption Process
 
 When you save a password:
 
 1. You enter your master password
-2. Keyforge processes your master password 600,000 times using a special algorithm
+2. KeyForge processes your master password 600,000 times using a special algorithm
 3. This creates an encryption key that is unique to your password
 4. Your passwords are encrypted using military-grade encryption
 5. The encrypted data is saved to a file on your computer
@@ -281,33 +281,28 @@ When you save a password:
 - It would take years or decades for even the fastest computers to crack your password
 - Each password entry uses unique random data, so even identical passwords look different when encrypted
 
-### What Happens When You Open Keyforge
+### What Happens When You Open KeyForge
 
 1. You enter your master password
-2. Keyforge processes it the same way (600,000 times)
+2. KeyForge processes it the same way (600,000 times)
 3. If the password is correct, your passwords are decrypted
-4. Your passwords are only stored in your computer's memory while Keyforge is open
-5. When you close Keyforge, the passwords are removed from memory
+4. Your passwords are only stored in your computer's memory while KeyForge is open
+5. When you close KeyForge, the passwords are removed from memory
 
 ## Troubleshooting
 
 ### The Application Won't Start
 
 - Make sure you installed Node.js and npm correctly
-- Make sure you ran "npm install" in the Keyforge2 folder
+- Make sure you ran "npm install" in the KeyForge folder
 - Check that port 5173 is not being used by another program
 
 ### I Cannot Unlock My Vault
 
 - Make sure you are typing your master password correctly
 - Check for typos or extra spaces
-- If you truly forgot your master password, your data cannot be recovered
+- If you truly forgot your master password, your data cannot be recovered unless you have a 15-word recovery phrase
 
-### Import Is Not Working
-
-- Make sure you exported your passwords as a CSV file
-- Check that the file is not corrupted
-- Try exporting from your browser again
 
 ## For Developers
 
@@ -316,7 +311,7 @@ When you save a password:
 The project is organized like this:
 
 ```
-Keyforge2/
+KeyForge/
 ├── electron/          Electron main process files
 ├── src/               Application source code
 │   ├── components/   User interface components
@@ -339,19 +334,17 @@ Keyforge2/
 - Tailwind CSS for styling
 - Web Crypto API for encryption
 
-## License
-
-This project is licensed under the MIT License. You are free to use it for personal or commercial purposes.
 
 ## Important Disclaimer
 
-This software is provided as-is without any warranty. While Keyforge uses strong encryption, you should:
+While KeyForge uses strong encryption, you should:
 
 - Always keep backups of your encrypted vault
 - Use a strong master password
 - Keep your master password safe
+- If you generate recovery phrases, keep them secure
 
-The developers are not responsible for any data loss.
+The developer is not responsible for any data loss.
 
 ## Getting Help
 
@@ -360,14 +353,15 @@ If you need help or have questions:
 - Check this README file first
 - Look for error messages in the application
 - Make sure you followed all installation steps correctly
+- Raise an issue here on GitHub, or send me an e-mail at rubix@rubix.garden
 
 ## Contributing
 
-If you want to help improve Keyforge:
+If you want to help improve KeyForge:
 
-- Make sure your code follows the existing style
-- Keep all security features working correctly
+- Keep all security and subsequent features working correctly
 - Test your changes thoroughly
 - Update documentation when needed
 
-Thank you for using Keyforge. Your passwords, your control, your security.
+
+Thank you for using KeyForge!

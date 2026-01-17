@@ -82,6 +82,27 @@ export function useVault(masterPassword: string | null) {
     [vault, masterPassword, saveVault]
   );
 
+  const addEntries = useCallback(
+    async (entries: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>[]) => {
+      if (!vault || !masterPassword) return false;
+
+      const newEntries: PasswordEntry[] = entries.map(entry => ({
+        ...entry,
+        id: crypto.randomUUID(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }));
+
+      const updatedVault: Vault = {
+        ...vault,
+        passwords: [...(vault.passwords || vault.entries || []), ...newEntries],
+      };
+
+      return await saveVault(updatedVault);
+    },
+    [vault, masterPassword, saveVault]
+  );
+
   const updateEntry = useCallback(
     async (id: string, updates: Partial<PasswordEntry>) => {
       if (!vault || !masterPassword) return false;
@@ -123,6 +144,7 @@ export function useVault(masterPassword: string | null) {
     loading,
     error,
     addEntry,
+    addEntries,
     updateEntry,
     deleteEntry,
     reloadVault: loadVault,
