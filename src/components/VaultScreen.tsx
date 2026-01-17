@@ -198,10 +198,10 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
   return (
     <>
       {copySuccess && <ErrorToast message={t('form.copySuccess')} onClose={() => setCopySuccess(false)} type="success" />}
-      <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <div className="h-screen flex overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div 
           ref={sidebarRef}
-          className="flex flex-col relative" 
+          className="flex flex-col relative h-full" 
           style={{ 
             width: `${sidebarWidth}px`,
             backgroundColor: 'var(--bg-surface)', 
@@ -284,117 +284,121 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('vault.searchPlaceholder')}
-              className="input-field pl-10 text-sm"
-            />
-          </div>
-
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              {filteredAndSortedPasswords.length} {filteredAndSortedPasswords.length === 1 ? t('vault.password') : t('vault.passwords')}
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="p-4 pb-0 flex-shrink-0">
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('vault.searchPlaceholder')}
+                className="input-field pl-10 text-sm"
+              />
             </div>
-            <div className="flex items-center gap-2">
-              <select
-                value={sortOption}
-                onChange={(e) => setSortOption(e.target.value as SortOption)}
-                className="input-field text-sm py-2 px-3 cursor-pointer appearance-none pr-8"
-                style={{
-                  backgroundImage: `url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTYgOEwwIDBIMTJINloiIGZpbGw9InZhcigtLXRleHQtc2Vjb25kYXJ5KSIvPjwvc3ZnPg==')`,
-                  backgroundSize: '12px 8px',
-                  backgroundPosition: 'right 0.75rem center',
-                  backgroundRepeat: 'no-repeat',
-                }}
-              >
-                <option value="name-asc">{t('vault.sort.nameAsc')}</option>
-                <option value="name-desc">{t('vault.sort.nameDesc')}</option>
-                <option value="date-newest">{t('vault.sort.newest')}</option>
-                <option value="date-oldest">{t('vault.sort.oldest')}</option>
-                <option value="username-asc">{t('vault.sort.usernameAsc')}</option>
-              </select>
-              <div className="flex gap-1 rounded-lg p-1" style={{ backgroundColor: 'var(--bg-surface-hover)' }}>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'text-white' : ''}`}
+
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                {filteredAndSortedPasswords.length} {filteredAndSortedPasswords.length === 1 ? t('vault.password') : t('vault.passwords')}
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value as SortOption)}
+                  className="input-field text-sm py-2 px-3 cursor-pointer appearance-none pr-8"
                   style={{
-                    backgroundColor: viewMode === 'grid' ? 'var(--color-primary)' : 'transparent',
-                    color: viewMode === 'grid' ? 'white' : 'var(--text-secondary)',
+                    backgroundImage: `url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTYgOEwwIDBIMTJINloiIGZpbGw9InZhcigtLXRleHQtc2Vjb25kYXJ5KSIvPjwvc3ZnPg==')`,
+                    backgroundSize: '12px 8px',
+                    backgroundPosition: 'right 0.75rem center',
+                    backgroundRepeat: 'no-repeat',
                   }}
-                  onMouseEnter={(e) => {
-                    if (viewMode !== 'grid') {
-                      e.currentTarget.style.color = 'var(--text-primary)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (viewMode !== 'grid') {
-                      e.currentTarget.style.color = 'var(--text-secondary)';
-                    }
-                  }}
-                  title={t('vault.view.grid')}
                 >
-                  <Grid3x3 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('compact')}
-                  className={`p-1.5 rounded transition-colors ${viewMode === 'compact' ? 'text-white' : ''}`}
-                  style={{
-                    backgroundColor: viewMode === 'compact' ? 'var(--color-primary)' : 'transparent',
-                    color: viewMode === 'compact' ? 'white' : 'var(--text-secondary)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (viewMode !== 'compact') {
-                      e.currentTarget.style.color = 'var(--text-primary)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (viewMode !== 'compact') {
-                      e.currentTarget.style.color = 'var(--text-secondary)';
-                    }
-                  }}
-                  title={t('vault.view.compact')}
-                >
-                  <List className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('expanded')}
-                  className={`p-1.5 rounded transition-colors ${viewMode === 'expanded' ? 'text-white' : ''}`}
-                  style={{
-                    backgroundColor: viewMode === 'expanded' ? 'var(--color-primary)' : 'transparent',
-                    color: viewMode === 'expanded' ? 'white' : 'var(--text-secondary)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (viewMode !== 'expanded') {
-                      e.currentTarget.style.color = 'var(--text-primary)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (viewMode !== 'expanded') {
-                      e.currentTarget.style.color = 'var(--text-secondary)';
-                    }
-                  }}
-                  title={t('vault.view.expanded')}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                </button>
+                  <option value="name-asc">{t('vault.sort.nameAsc')}</option>
+                  <option value="name-desc">{t('vault.sort.nameDesc')}</option>
+                  <option value="date-newest">{t('vault.sort.newest')}</option>
+                  <option value="date-oldest">{t('vault.sort.oldest')}</option>
+                  <option value="username-asc">{t('vault.sort.usernameAsc')}</option>
+                </select>
+                <div className="flex gap-1 rounded-lg p-1" style={{ backgroundColor: 'var(--bg-surface-hover)' }}>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'text-white' : ''}`}
+                    style={{
+                      backgroundColor: viewMode === 'grid' ? 'var(--color-primary)' : 'transparent',
+                      color: viewMode === 'grid' ? 'white' : 'var(--text-secondary)',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (viewMode !== 'grid') {
+                        e.currentTarget.style.color = 'var(--text-primary)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (viewMode !== 'grid') {
+                        e.currentTarget.style.color = 'var(--text-secondary)';
+                      }
+                    }}
+                    title={t('vault.view.grid')}
+                  >
+                    <Grid3x3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('compact')}
+                    className={`p-1.5 rounded transition-colors ${viewMode === 'compact' ? 'text-white' : ''}`}
+                    style={{
+                      backgroundColor: viewMode === 'compact' ? 'var(--color-primary)' : 'transparent',
+                      color: viewMode === 'compact' ? 'white' : 'var(--text-secondary)',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (viewMode !== 'compact') {
+                        e.currentTarget.style.color = 'var(--text-primary)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (viewMode !== 'compact') {
+                        e.currentTarget.style.color = 'var(--text-secondary)';
+                      }
+                    }}
+                    title={t('vault.view.compact')}
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('expanded')}
+                    className={`p-1.5 rounded transition-colors ${viewMode === 'expanded' ? 'text-white' : ''}`}
+                    style={{
+                      backgroundColor: viewMode === 'expanded' ? 'var(--color-primary)' : 'transparent',
+                      color: viewMode === 'expanded' ? 'white' : 'var(--text-secondary)',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (viewMode !== 'expanded') {
+                        e.currentTarget.style.color = 'var(--text-primary)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (viewMode !== 'expanded') {
+                        e.currentTarget.style.color = 'var(--text-secondary)';
+                      }
+                    }}
+                    title={t('vault.view.expanded')}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          <PasswordEntryList
-            entries={filteredAndSortedPasswords}
-            selectedId={selectedEntry?.id}
-            onSelect={handleViewEntry}
-            onDelete={handleDeleteEntry}
-            onCopyPassword={handleCopyPassword}
-            onTogglePin={handleTogglePin}
-            viewMode={viewMode}
-          />
+          <div className="flex-1 overflow-y-auto p-4 pt-0 min-h-0">
+            <PasswordEntryList
+              entries={filteredAndSortedPasswords}
+              selectedId={selectedEntry?.id}
+              onSelect={handleViewEntry}
+              onDelete={handleDeleteEntry}
+              onCopyPassword={handleCopyPassword}
+              onTogglePin={handleTogglePin}
+              viewMode={viewMode}
+            />
+          </div>
         </div>
         {/* Resize handle */}
         <div
@@ -406,7 +410,7 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
         />
       </div>
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden h-full">
         {showForm ? (
           <PasswordEntryForm
             key={isCreatingNew && generatedPassword ? `new-${generatedPassword}-${Date.now()}` : selectedEntry?.id || 'new'}
@@ -423,7 +427,7 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
             isViewMode={!!selectedEntry}
           />
         ) : (
-          <div className="flex-1 flex items-center justify-center p-8">
+          <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
             <div className="text-center" style={{ color: 'var(--text-secondary)' }}>
               <Lock className="w-16 h-16 mx-auto mb-4 opacity-50" />
               <p className="text-lg">{t('vault.selectPassword')}</p>

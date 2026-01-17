@@ -290,17 +290,17 @@ export function PasswordEntryList({
                     {entry.title || t('form.untitled')}
                   </div>
                 </div>
-                <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                <div className="flex items-center gap-3 text-xs min-w-0" style={{ color: 'var(--text-secondary)' }}>
                   {entry.username && (
-                    <div className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
+                    <div className="flex items-center gap-1 min-w-0 flex-1">
+                      <User className="w-3 h-3 flex-shrink-0" />
                       <span className="truncate">{entry.username}</span>
                     </div>
                   )}
                   {entry.url && (
-                    <div className="flex items-center gap-1">
-                      <Globe className="w-3 h-3" />
-                      <span className="truncate max-w-[120px]">{entry.url}</span>
+                    <div className="flex items-center gap-1 min-w-0 flex-1">
+                      <Globe className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{entry.url}</span>
                     </div>
                   )}
                 </div>

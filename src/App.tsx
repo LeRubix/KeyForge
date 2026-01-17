@@ -18,6 +18,26 @@ function App() {
       setLoading(false);
     };
     checkVault();
+
+    // Sync close-to-tray setting with main process
+    if (window.electronAPI) {
+      const electronAPI = window.electronAPI;
+      const syncCloseToTray = () => {
+        const closeToTray = localStorage.getItem('keyforge_close_to_tray') === 'true';
+        electronAPI.setCloseToTray(closeToTray);
+        electronAPI.sendCloseToTraySetting(closeToTray);
+      };
+      
+      // Sync immediately
+      syncCloseToTray();
+      
+      // Listen for requests from main process to send the setting
+      const cleanup = electronAPI.onRequestCloseToTraySetting(() => {
+        syncCloseToTray();
+      });
+      
+      return cleanup;
+    }
   }, []);
 
   const handleLogin = (password: string) => {

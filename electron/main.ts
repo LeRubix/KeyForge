@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let closeToTray = false;
+let appIsQuitting = false;
 
 function getIconPath(): string {
   if (process.env.NODE_ENV === 'development') {
@@ -122,12 +123,31 @@ function createWindow() {
     }
   });
 
+  mainWindow.on('close', (event) => {
+    // Check the setting from localStorage via IPC before closing
+    if (closeToTray && !appIsQuitting) {
+      event.preventDefault();
+      mainWindow?.hide();
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow?.webContents.setZoomFactor(1);
+    // Request the close-to-tray setting from the renderer
+    mainWindow?.webContents.send('request-close-to-tray-setting');
+    // Also try to get it immediately via IPC
+    mainWindow?.webContents.executeJavaScript(`
+      (async () => {
+        if (window.electronAPI) {
+          const setting = localStorage.getItem('keyforge_close_to_tray') === 'true';
+          await window.electronAPI.setCloseToTray(setting);
+        }
+      })();
+    `).catch(() => {});
   });
 }
 
@@ -158,14 +178,13 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (closeToTray && mainWindow) {
-    mainWindow.hide();
-  } else if (process.platform !== 'darwin') {
+  if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
 app.on('before-quit', () => {
+  appIsQuitting = true;
   closeToTray = false;
 });
 
@@ -204,6 +223,7 @@ function createTray() {
     {
       label: 'Quit',
       click: () => {
+        appIsQuitting = true;
         closeToTray = false;
         app.quit();
       },
@@ -251,6 +271,19 @@ ipcMain.handle('set-close-to-tray', async (_event, enabled: boolean) => {
   closeToTray = enabled;
   if (enabled && !tray) {
     createTray();
+  }
+});
+
+ipcMain.handle('get-close-to-tray', async () => {
+  return closeToTray;
+});
+
+ipcMain.on('close-to-tray-setting', (_event, enabled: boolean) => {
+  closeToTray = enabled;
+  if (enabled && !tray) {
+    createTray();
+  } else if (!enabled && tray) {
+    // Don't destroy tray, just keep it for potential future use
   }
 });
 

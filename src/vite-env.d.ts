@@ -7,5 +7,8 @@ interface Window {
     clearVault: () => Promise<boolean>;
     vaultExists: () => Promise<boolean>;
     setCloseToTray: (enabled: boolean) => Promise<void>;
+    getCloseToTray: () => Promise<boolean>;
+    onRequestCloseToTraySetting: (callback: () => void) => () => void;
+    sendCloseToTraySetting: (enabled: boolean) => void;
   };
 }
