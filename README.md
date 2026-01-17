@@ -1,16 +1,25 @@
 # KeyForge
-
-<img width="1386" height="893" alt="image" src="https://github.com/user-attachments/assets/189bd6a5-8adc-4b69-aeee-acd00cea7c4a" />
-<img width="1386" height="893" alt="image" src="https://github.com/user-attachments/assets/71d9532a-3e1c-496e-b6fa-224ef902a919" />
-<img width="1386" height="893" alt="image" src="https://github.com/user-attachments/assets/636e1b13-73df-4c0a-b728-ccf1bbaa2a3a" />
-<img width="1386" height="893" alt="image" src="https://github.com/user-attachments/assets/fc869ce1-c3b8-47f2-b97d-34d13dbadbf6" />
-<img width="2560" height="1400" alt="image" src="https://github.com/user-attachments/assets/b8a7a0fb-a2f3-44cc-867e-1e23668cf1d9" />
-<img width="2560" height="1400" alt="image" src="https://github.com/user-attachments/assets/0a3a24b7-d237-4ee8-b778-707d62c1e1be" />
-<img width="2560" height="1400" alt="image" src="https://github.com/user-attachments/assets/c3c9d6b8-f74d-4d3a-b51d-0b308d95a265" />
-
-
-<br>
 KeyForge is a secure password manager that runs on your computer. It helps you store and manage all your passwords in one safe place. Everything is encrypted and stored only on your computer, so your passwords never leave your device.
+<br>
+
+<table>
+<tr>
+<td><img width="1386" height="893" alt="image" src="https://github.com/user-attachments/assets/189bd6a5-8adc-4b69-aeee-acd00cea7c4a" /></td>
+<td><img width="1386" height="893" alt="image" src="https://github.com/user-attachments/assets/71d9532a-3e1c-496e-b6fa-224ef902a919" /></td>
+</tr>
+<tr>
+<td><img width="1386" height="893" alt="image" src="https://github.com/user-attachments/assets/636e1b13-73df-4c0a-b728-ccf1bbaa2a3a" /></td>
+<td><img width="1386" height="893" alt="image" src="https://github.com/user-attachments/assets/fc869ce1-c3b8-47f2-b97d-34d13dbadbf6" /></td>
+</tr>
+<tr>
+<td><img width="2560" height="1400" alt="image" src="https://github.com/user-attachments/assets/b8a7a0fb-a2f3-44cc-867e-1e23668cf1d9" /></td>
+<td><img width="2560" height="1400" alt="image" src="https://github.com/user-attachments/assets/0a3a24b7-d237-4ee8-b778-707d62c1e1be" /></td>
+</tr>
+<tr>
+<td colspan="2"><img width="2560" height="1400" alt="image" src="https://github.com/user-attachments/assets/c3c9d6b8-f74d-4d3a-b51d-0b308d95a265" /></td>
+</tr>
+</table>
+<br>
 
 ## What is KeyForge?
 
