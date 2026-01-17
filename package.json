@@ -1,7 +1,7 @@
 {
-  "name": "keyforge",
-  "version": "2.0.1",
-  "description": "A modern, secure password manager",
+  "name": "KeyForge",
+  "version": "2.0.2",
+  "description": "A modern, secure password manager and generator",
   "type": "module",
   "main": "dist-electron/main.js",
   "author": "Rubix",

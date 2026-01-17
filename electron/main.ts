@@ -124,11 +124,35 @@ function createWindow() {
   });
 
   mainWindow.on('close', (event) => {
-    // Check the setting from localStorage via IPC before closing
-    if (closeToTray && !appIsQuitting) {
+    if (appIsQuitting) {
+      return;
+    }
+
+    if (closeToTray) {
       event.preventDefault();
       mainWindow?.hide();
+      return;
     }
+
+    event.preventDefault();
+    mainWindow?.webContents
+      .executeJavaScript(
+        `localStorage.getItem('keyforge_close_to_tray') === 'true'`,
+        true
+      )
+      .then((shouldCloseToTray) => {
+        closeToTray = Boolean(shouldCloseToTray);
+        if (closeToTray) {
+          mainWindow?.hide();
+        } else {
+          appIsQuitting = true;
+          mainWindow?.close();
+        }
+      })
+      .catch(() => {
+        appIsQuitting = true;
+        mainWindow?.close();
+      });
   });
 
   mainWindow.on('closed', () => {
@@ -137,9 +161,7 @@ function createWindow() {
 
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow?.webContents.setZoomFactor(1);
-    // Request the close-to-tray setting from the renderer
     mainWindow?.webContents.send('request-close-to-tray-setting');
-    // Also try to get it immediately via IPC
     mainWindow?.webContents.executeJavaScript(`
       (async () => {
         if (window.electronAPI) {
@@ -152,6 +174,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  migrateVaultIfNeeded();
+  
   const icon = getAppIcon();
   
   if (!icon.isEmpty()) {
@@ -234,8 +258,42 @@ function createTray() {
 }
 
 const getVaultPath = () => {
+  const appDataPath = app.getPath('appData');
+  const vaultDir = path.join(appDataPath, 'KeyForge');
+  if (!fs.existsSync(vaultDir)) {
+    fs.mkdirSync(vaultDir, { recursive: true });
+  }
+  return path.join(vaultDir, 'vault.encrypted');
+};
+
+const getOldVaultPath = () => {
   const userDataPath = app.getPath('userData');
   return path.join(userDataPath, 'vault.encrypted');
+};
+
+const migrateVaultIfNeeded = () => {
+  try {
+    const newPath = getVaultPath();
+    const oldPath = getOldVaultPath();
+    
+    if (fs.existsSync(newPath)) {
+      return;
+    }
+    
+    if (fs.existsSync(oldPath)) {
+      const oldDir = path.dirname(oldPath);
+      const newDir = path.dirname(newPath);
+      
+      if (!fs.existsSync(newDir)) {
+        fs.mkdirSync(newDir, { recursive: true });
+      }
+      
+      fs.copyFileSync(oldPath, newPath);
+      console.log('Migrated vault from old location to new location');
+    }
+  } catch (error) {
+    console.error('Error migrating vault:', error);
+  }
 };
 
 ipcMain.handle('read-vault', async () => {
@@ -283,7 +341,6 @@ ipcMain.on('close-to-tray-setting', (_event, enabled: boolean) => {
   if (enabled && !tray) {
     createTray();
   } else if (!enabled && tray) {
-    // Don't destroy tray, just keep it for potential future use
   }
 });
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Save, X, Eye, EyeOff, Copy, RefreshCw, ExternalLink, Pencil } from 'lucide-react';
-import { PasswordEntry } from '@/utils/storage';
+import { PasswordEntry, PasswordFolder } from '@/utils/storage';
 import { generatePassword } from '@/utils/crypto';
 import { PasswordGenerator } from './PasswordGenerator';
 import { ErrorToast } from './ErrorToast';
@@ -17,6 +17,7 @@ interface PasswordEntryFormProps {
   onGeneratePassword: () => void;
   initialPassword?: string;
   isViewMode?: boolean;
+  folders?: PasswordFolder[];
 }
 
 export function PasswordEntryForm({
@@ -26,12 +27,14 @@ export function PasswordEntryForm({
   onGeneratePassword: _onGeneratePassword,
   initialPassword,
   isViewMode: initialViewMode = false,
+  folders = [],
 }: PasswordEntryFormProps) {
   const [title, setTitle] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState(initialPassword || '');
   const [url, setUrl] = useState('');
   const [notes, setNotes] = useState('');
+  const [folderId, setFolderId] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -57,6 +60,7 @@ export function PasswordEntryForm({
       setPassword(entry.password);
       setUrl(entry.url || '');
       setNotes(entry.notes || '');
+      setFolderId(entry.folderId || null);
       setIsEditMode(!initialViewMode);
       setLastInitialPassword('');
     } else {
@@ -64,6 +68,7 @@ export function PasswordEntryForm({
       setUsername('');
       setUrl('');
       setNotes('');
+      setFolderId(null);
       setIsEditMode(true);
       if (initialPassword) {
         setPassword(initialPassword);
@@ -117,6 +122,7 @@ export function PasswordEntryForm({
         password,
         url: url || undefined,
         notes: notes || undefined,
+        folderId: folderId || undefined,
       });
       if (!entry) {
         onCancel();
@@ -399,6 +405,44 @@ export function PasswordEntryForm({
                 )}
               </div>
             </div>
+
+            {folders.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                  {t('vault.folder')}
+                </label>
+                <div className="relative">
+                  <select
+                    value={folderId || ''}
+                    onChange={(e) => setFolderId(e.target.value || null)}
+                    className="input-field appearance-none pr-10 cursor-pointer transition-all"
+                    disabled={!isEditMode}
+                    style={{
+                      backgroundImage: `url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTYgOEwwIDBIMTJINloiIGZpbGw9InZhcigtLXRleHQtc2Vjb25kYXJ5KSIvPjwvc3ZnPg==')`,
+                      backgroundSize: '12px 8px',
+                      backgroundPosition: 'right 0.75rem center',
+                      backgroundRepeat: 'no-repeat',
+                      paddingLeft: folderId ? '2.5rem' : undefined,
+                    }}
+                  >
+                    <option value="">{t('vault.noFolder')}</option>
+                    {folders.map((folder) => (
+                      <option key={folder.id} value={folder.id}>
+                        {folder.name}
+                      </option>
+                    ))}
+                  </select>
+                  {folderId && (
+                    <div
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 rounded pointer-events-none flex-shrink-0"
+                      style={{
+                        backgroundColor: folders.find(f => f.id === folderId)?.color || 'transparent',
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">

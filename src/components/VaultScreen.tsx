@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, Search, Lock, Download, Key, Settings, Grid3x3, List, LayoutGrid } from 'lucide-react';
+import { Plus, Search, Lock, Download, Key, Settings, Grid3x3, List, LayoutGrid, Pin, Trash2, Folder, FolderPlus, X } from 'lucide-react';
 import { useVault } from '@/hooks/useVault';
-import { PasswordEntryList } from './PasswordEntryList';
+import { FolderList } from './FolderList';
+import { FolderDialog } from './FolderDialog';
 import { PasswordEntryForm } from './PasswordEntryForm';
 import { PasswordGenerator } from './PasswordGenerator';
 import { ImportDialog } from './ImportDialog';
-import { PasswordEntry } from '@/utils/storage';
-import { initializeTheme } from '@/utils/theme';
+import { PasswordEntry, PasswordFolder } from '@/utils/storage';
+import { initializeTheme, getColorScheme } from '@/utils/theme';
 import { SettingsDialog } from './SettingsDialog';
 import { ErrorToast } from './ErrorToast';
 import { t } from '@/utils/i18n';
@@ -20,23 +21,31 @@ export type SortOption = 'name-asc' | 'name-desc' | 'date-newest' | 'date-oldest
 export type ViewMode = 'grid' | 'compact' | 'expanded';
 
 export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
-  const { vault, loading, addEntry, addEntries, updateEntry, deleteEntry } = useVault(masterPassword);
+  const { vault, loading, addEntry, addEntries, updateEntry, deleteEntry, addFolder, updateFolder, deleteFolder, moveEntriesToFolder, removeEntriesFromFolder } = useVault(masterPassword);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEntry, setSelectedEntry] = useState<PasswordEntry | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number>(-1);
   const [showForm, setShowForm] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showFolderDialog, setShowFolderDialog] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<PasswordFolder | null>(null);
+  const [showFolderMenu, setShowFolderMenu] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('name-asc');
-  const [viewMode, setViewMode] = useState<ViewMode>('compact');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem('keyforge_view_mode');
+    return (saved as ViewMode) || 'compact';
+  });
   const [generatedPassword, setGeneratedPassword] = useState<string>('');
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [, setLanguageKey] = useState(0);
   const [copySuccess, setCopySuccess] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(384); // 96 * 4 = 384px (w-96)
+  const [sidebarWidth, setSidebarWidth] = useState(384);
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const MIN_SIDEBAR_WIDTH = 300; // Slightly smaller than current 384px
+  const MIN_SIDEBAR_WIDTH = 300;
 
   useEffect(() => {
     initializeTheme();
@@ -64,11 +73,9 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
         entry.notes?.toLowerCase().includes(query)
     );
 
-    // Separate pinned and unpinned entries
     const pinned = filtered.filter((e: PasswordEntry) => e.pinned);
     const unpinned = filtered.filter((e: PasswordEntry) => !e.pinned);
 
-    // Sort each group
     const sortEntries = (entries: PasswordEntry[]) => {
       return [...entries].sort((a, b) => {
         switch (sortOption) {
@@ -93,13 +100,45 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
 
   const handleAddEntry = () => {
     setSelectedEntry(null);
+    setSelectedIds(new Set());
     setIsCreatingNew(true);
     setShowForm(true);
   };
 
-  const handleViewEntry = (entry: PasswordEntry) => {
+  const handleViewEntry = (entry: PasswordEntry, event?: React.MouseEvent) => {
+    if (event) {
+      const isCtrlClick = event.ctrlKey || event.metaKey;
+      const isShiftClick = event.shiftKey;
+      
+      if (isCtrlClick || isShiftClick) {
+        event.preventDefault();
+        if (isCtrlClick) {
+          const newSelectedIds = new Set(selectedIds);
+          if (newSelectedIds.has(entry.id)) {
+            newSelectedIds.delete(entry.id);
+          } else {
+            newSelectedIds.add(entry.id);
+          }
+          setSelectedIds(newSelectedIds);
+          setLastSelectedIndex(filteredAndSortedPasswords.findIndex(e => e.id === entry.id));
+        } else if (isShiftClick && lastSelectedIndex >= 0) {
+          const currentIndex = filteredAndSortedPasswords.findIndex(e => e.id === entry.id);
+          const start = Math.min(lastSelectedIndex, currentIndex);
+          const end = Math.max(lastSelectedIndex, currentIndex);
+          const newSelectedIds = new Set(selectedIds);
+          for (let i = start; i <= end; i++) {
+            newSelectedIds.add(filteredAndSortedPasswords[i].id);
+          }
+          setSelectedIds(newSelectedIds);
+        }
+        return;
+      }
+    }
+    
+    setSelectedIds(new Set());
     setSelectedEntry(entry);
     setShowForm(true);
+    setLastSelectedIndex(filteredAndSortedPasswords.findIndex(e => e.id === entry.id));
   };
 
   const handleCopyPassword = async (password: string) => {
@@ -141,7 +180,6 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
     }
   }, [vault, selectedEntry, showForm, isCreatingNew]);
 
-  // Sidebar resize handlers
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
@@ -177,13 +215,43 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
     }
   };
 
+  const handleTogglePinMultiple = async () => {
+    if (selectedIds.size === 0) return;
+    const idsArray = Array.from(selectedIds);
+    for (const id of idsArray) {
+      const entry = passwords.find((p: PasswordEntry) => p.id === id);
+      if (entry) {
+        await updateEntry(id, { pinned: !entry.pinned });
+      }
+    }
+    setSelectedIds(new Set());
+  };
+
   const handleDeleteEntry = async (id: string) => {
-            if (confirm(t('form.deleteConfirm'))) {
+    if (confirm(t('form.deleteConfirm'))) {
       await deleteEntry(id);
       if (selectedEntry?.id === id) {
         setSelectedEntry(null);
         setShowForm(false);
       }
+      const newSelectedIds = new Set(selectedIds);
+      newSelectedIds.delete(id);
+      setSelectedIds(newSelectedIds);
+    }
+  };
+
+  const handleDeleteMultiple = async () => {
+    if (selectedIds.size === 0) return;
+    if (confirm(t('form.deleteConfirm'))) {
+      const idsArray = Array.from(selectedIds);
+      for (const id of idsArray) {
+        await deleteEntry(id);
+      }
+      if (selectedEntry && selectedIds.has(selectedEntry.id)) {
+        setSelectedEntry(null);
+        setShowForm(false);
+      }
+      setSelectedIds(new Set());
     }
   };
 
@@ -286,6 +354,11 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
 
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <div className="p-4 pb-0 flex-shrink-0">
+            <div className="text-center mb-3">
+              <span className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>
+                {filteredAndSortedPasswords.length} {filteredAndSortedPasswords.length === 1 ? t('vault.password') : t('vault.passwords')}
+              </span>
+            </div>
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
               <input
@@ -294,13 +367,51 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('vault.searchPlaceholder')}
                 className="input-field pl-10 text-sm"
+                style={{ paddingRight: searchQuery ? '2.5rem' : undefined }}
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded transition-colors"
+                  style={{ color: 'var(--text-secondary)' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                    e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                  title="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             <div className="flex items-center justify-between mb-3">
-              <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                {filteredAndSortedPasswords.length} {filteredAndSortedPasswords.length === 1 ? t('vault.password') : t('vault.passwords')}
-              </div>
+              <button
+                onClick={() => {
+                  setEditingFolder(null);
+                  setShowFolderDialog(true);
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded transition-colors"
+                style={{
+                  backgroundColor: 'var(--bg-surface-hover)',
+                  color: 'var(--text-secondary)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }}
+                title={t('vault.newFolder')}
+              >
+                <FolderPlus className="w-4 h-4" />
+              </button>
               <div className="flex items-center gap-2">
                 <select
                   value={sortOption}
@@ -320,87 +431,132 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
                   <option value="username-asc">{t('vault.sort.usernameAsc')}</option>
                 </select>
                 <div className="flex gap-1 rounded-lg p-1" style={{ backgroundColor: 'var(--bg-surface-hover)' }}>
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'text-white' : ''}`}
-                    style={{
-                      backgroundColor: viewMode === 'grid' ? 'var(--color-primary)' : 'transparent',
-                      color: viewMode === 'grid' ? 'white' : 'var(--text-secondary)',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (viewMode !== 'grid') {
-                        e.currentTarget.style.color = 'var(--text-primary)';
+                  {(() => {
+                    const isQuepal = getColorScheme() === 'cyan';
+                    const getButtonStyle = (isActive: boolean) => {
+                      if (isActive && isQuepal) {
+                        return {
+                          background: 'linear-gradient(to right, #11998e, #38ef7d)',
+                          color: 'white',
+                        };
+                      } else if (isActive) {
+                        return {
+                          backgroundColor: 'var(--color-primary)',
+                          color: 'white',
+                        };
                       }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (viewMode !== 'grid') {
-                        e.currentTarget.style.color = 'var(--text-secondary)';
-                      }
-                    }}
-                    title={t('vault.view.grid')}
-                  >
-                    <Grid3x3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('compact')}
-                    className={`p-1.5 rounded transition-colors ${viewMode === 'compact' ? 'text-white' : ''}`}
-                    style={{
-                      backgroundColor: viewMode === 'compact' ? 'var(--color-primary)' : 'transparent',
-                      color: viewMode === 'compact' ? 'white' : 'var(--text-secondary)',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (viewMode !== 'compact') {
-                        e.currentTarget.style.color = 'var(--text-primary)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (viewMode !== 'compact') {
-                        e.currentTarget.style.color = 'var(--text-secondary)';
-                      }
-                    }}
-                    title={t('vault.view.compact')}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('expanded')}
-                    className={`p-1.5 rounded transition-colors ${viewMode === 'expanded' ? 'text-white' : ''}`}
-                    style={{
-                      backgroundColor: viewMode === 'expanded' ? 'var(--color-primary)' : 'transparent',
-                      color: viewMode === 'expanded' ? 'white' : 'var(--text-secondary)',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (viewMode !== 'expanded') {
-                        e.currentTarget.style.color = 'var(--text-primary)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (viewMode !== 'expanded') {
-                        e.currentTarget.style.color = 'var(--text-secondary)';
-                      }
-                    }}
-                    title={t('vault.view.expanded')}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                  </button>
+                      return {
+                        backgroundColor: 'transparent',
+                        color: 'var(--text-secondary)',
+                      };
+                    };
+                    return (
+                      <>
+                        <button
+                          onClick={() => {
+                            setViewMode('grid');
+                            localStorage.setItem('keyforge_view_mode', 'grid');
+                          }}
+                          className="p-1.5 rounded transition-colors"
+                          style={getButtonStyle(viewMode === 'grid')}
+                          onMouseEnter={(e) => {
+                            if (viewMode !== 'grid') {
+                              e.currentTarget.style.color = 'var(--text-primary)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (viewMode !== 'grid') {
+                              e.currentTarget.style.color = 'var(--text-secondary)';
+                            }
+                          }}
+                          title={t('vault.view.grid')}
+                        >
+                          <Grid3x3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setViewMode('compact');
+                            localStorage.setItem('keyforge_view_mode', 'compact');
+                          }}
+                          className="p-1.5 rounded transition-colors"
+                          style={getButtonStyle(viewMode === 'compact')}
+                          onMouseEnter={(e) => {
+                            if (viewMode !== 'compact') {
+                              e.currentTarget.style.color = 'var(--text-primary)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (viewMode !== 'compact') {
+                              e.currentTarget.style.color = 'var(--text-secondary)';
+                            }
+                          }}
+                          title={t('vault.view.compact')}
+                        >
+                          <List className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setViewMode('expanded');
+                            localStorage.setItem('keyforge_view_mode', 'expanded');
+                          }}
+                          className="p-1.5 rounded transition-colors"
+                          style={getButtonStyle(viewMode === 'expanded')}
+                          onMouseEnter={(e) => {
+                            if (viewMode !== 'expanded') {
+                              e.currentTarget.style.color = 'var(--text-primary)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (viewMode !== 'expanded') {
+                              e.currentTarget.style.color = 'var(--text-secondary)';
+                            }
+                          }}
+                          title={t('vault.view.expanded')}
+                        >
+                          <LayoutGrid className="w-4 h-4" />
+                        </button>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 pt-0 min-h-0">
-            <PasswordEntryList
+            <FolderList
+              folders={vault?.folders || []}
               entries={filteredAndSortedPasswords}
               selectedId={selectedEntry?.id}
+              selectedIds={Array.from(selectedIds)}
               onSelect={handleViewEntry}
               onDelete={handleDeleteEntry}
               onCopyPassword={handleCopyPassword}
               onTogglePin={handleTogglePin}
+              onToggleFolder={async (folderId) => {
+                const folder = vault?.folders?.find(f => f.id === folderId);
+                if (folder) {
+                  await updateFolder(folderId, { expanded: !folder.expanded });
+                }
+              }}
+              onUpdateFolder={async (folderId: string, updates: Partial<PasswordFolder>) => {
+                await updateFolder(folderId, updates);
+              }}
+              onDeleteFolder={async (folderId: string) => {
+                if (confirm(t('vault.deleteFolderConfirm'))) {
+                  await deleteFolder(folderId);
+                }
+              }}
+              onMoveToFolder={async (entryId: string, folderId: string | null) => {
+                await moveEntriesToFolder([entryId], folderId);
+              }}
+              onRemoveFromFolder={async (entryId: string) => {
+                await removeEntriesFromFolder([entryId]);
+              }}
               viewMode={viewMode}
             />
           </div>
         </div>
-        {/* Resize handle */}
         <div
           onMouseDown={() => setIsResizing(true)}
           className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors"
@@ -416,15 +572,16 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
             key={isCreatingNew && generatedPassword ? `new-${generatedPassword}-${Date.now()}` : selectedEntry?.id || 'new'}
             entry={selectedEntry}
             onSave={handleSaveEntry}
-          onCancel={() => {
-            setShowForm(false);
-            setSelectedEntry(null);
-            setIsCreatingNew(false);
-            setGeneratedPassword('');
-          }}
+            onCancel={() => {
+              setShowForm(false);
+              setSelectedEntry(null);
+              setIsCreatingNew(false);
+              setGeneratedPassword('');
+            }}
             onGeneratePassword={() => {}}
             initialPassword={generatedPassword}
             isViewMode={!!selectedEntry}
+            folders={vault?.folders || []}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
@@ -436,6 +593,105 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
           </div>
         )}
       </div>
+
+      {selectedIds.size > 0 && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-200"
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
+            boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2), 0 0 0 1px var(--border-color)',
+          }}
+        >
+          <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            {selectedIds.size} {selectedIds.size === 1 ? t('vault.password') : t('vault.passwords')} {t('vault.selected')}
+          </span>
+          <div className="w-px h-5" style={{ backgroundColor: 'var(--border-color)' }} />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleTogglePinMultiple}
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--text-secondary)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+              title={t('vault.pin')}
+            >
+              <Pin className="w-4 h-4" />
+            </button>
+            {vault?.folders && vault.folders.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowFolderMenu(!showFolderMenu)}
+                  className="p-2 rounded-lg transition-colors"
+                  style={{ color: 'var(--text-secondary)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+                  title={t('vault.moveToFolder')}
+                >
+                  <Folder className="w-4 h-4" />
+                </button>
+                {showFolderMenu && (
+                  <div
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 rounded-xl shadow-xl min-w-[200px] animate-in fade-in slide-in-from-bottom-2 duration-200"
+                    style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}
+                  >
+                    <button
+                      onClick={async () => {
+                        await moveEntriesToFolder(Array.from(selectedIds), null);
+                        setSelectedIds(new Set());
+                        setShowFolderMenu(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm rounded-lg transition-colors flex items-center gap-2"
+                      style={{ color: 'var(--text-primary)' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                      {t('vault.noFolder')}
+                    </button>
+                    {vault.folders.map((folder) => (
+                      <button
+                        key={folder.id}
+                        onClick={async () => {
+                          await moveEntriesToFolder(Array.from(selectedIds), folder.id);
+                          setSelectedIds(new Set());
+                          setShowFolderMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm rounded-lg transition-colors flex items-center gap-2"
+                        style={{ color: 'var(--text-primary)' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      >
+                        <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: folder.color }} />
+                        <span className="truncate">{folder.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <button
+              onClick={handleDeleteMultiple}
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: '#ef4444' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+              title={t('form.delete')}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => { setSelectedIds(new Set()); setShowFolderMenu(false); }}
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--text-secondary)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+              title={t('form.cancel')}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {showGenerator && (
         <PasswordGenerator
@@ -469,6 +725,25 @@ export function VaultScreen({ masterPassword, onLogout }: VaultScreenProps) {
             await addEntries(entries);
             setShowImport(false);
           }}
+        />
+      )}
+
+      {showFolderDialog && (
+        <FolderDialog
+          onClose={() => {
+            setShowFolderDialog(false);
+            setEditingFolder(null);
+          }}
+          onSave={async (name, color) => {
+            if (editingFolder) {
+              await updateFolder(editingFolder.id, { name, color });
+            } else {
+              await addFolder(name, color);
+            }
+            setShowFolderDialog(false);
+            setEditingFolder(null);
+          }}
+          folder={editingFolder}
         />
       )}
       </div>

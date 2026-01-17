@@ -1,29 +1,40 @@
 import { useState, useEffect } from 'react';
 import { Trash2, Globe, User, Copy, Pin } from 'lucide-react';
-import { PasswordEntry } from '@/utils/storage';
+import { PasswordEntry, PasswordFolder } from '@/utils/storage';
 import { ViewMode } from './VaultScreen';
+import { PasswordContextMenu } from './PasswordContextMenu';
 import { t } from '@/utils/i18n';
 
 interface PasswordEntryListProps {
   entries: PasswordEntry[];
   selectedId?: string;
-  onSelect: (entry: PasswordEntry) => void;
+  selectedIds?: string[];
+  onSelect: (entry: PasswordEntry, event?: React.MouseEvent) => void;
   onDelete: (id: string) => void;
   onCopyPassword?: (password: string) => void;
   onTogglePin?: (id: string) => void;
+  onMoveToFolder?: (entryId: string, folderId: string | null) => void;
+  onRemoveFromFolder?: (entryId: string) => void;
+  folders?: PasswordFolder[];
   viewMode?: ViewMode;
 }
 
 export function PasswordEntryList({
   entries,
   selectedId,
+  selectedIds = [],
   onSelect,
   onDelete,
   onCopyPassword,
   onTogglePin,
+  onMoveToFolder,
+  onRemoveFromFolder,
+  folders = [],
   viewMode = 'compact',
 }: PasswordEntryListProps) {
   const [, setLanguageKey] = useState(0);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; entry: PasswordEntry } | null>(null);
+  const safeSelectedIds = selectedIds || [];
 
   useEffect(() => {
     const handleLanguageChange = () => {
@@ -35,14 +46,31 @@ export function PasswordEntryList({
 
   if (entries.length === 0) {
     return (
-      <div className="text-center text-sm py-8" style={{ color: 'var(--text-secondary)' }}>
-        {t('vault.noPasswords')}
-      </div>
+      <>
+        <div className="text-center text-sm py-8" style={{ color: 'var(--text-secondary)' }}>
+          {t('vault.noPasswords')}
+        </div>
+        {contextMenu && (
+          <PasswordContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            onClose={() => setContextMenu(null)}
+            onPin={() => onTogglePin?.(contextMenu.entry.id)}
+            onCopy={() => onCopyPassword?.(contextMenu.entry.password)}
+            onDelete={() => onDelete(contextMenu.entry.id)}
+            onMoveToFolder={onMoveToFolder ? (folderId) => onMoveToFolder(contextMenu.entry.id, folderId) : undefined}
+            onRemoveFromFolder={onRemoveFromFolder && contextMenu.entry.folderId ? () => onRemoveFromFolder(contextMenu.entry.id) : undefined}
+            isPinned={contextMenu.entry.pinned || false}
+            currentFolderId={contextMenu.entry.folderId || null}
+            folders={folders}
+          />
+        )}
+      </>
     );
   }
 
   const getBaseClasses = (isSelected: boolean) => `
-    rounded-lg cursor-pointer transition-all border
+    rounded-lg cursor-pointer transition-all border select-none
     ${isSelected ? '' : 'border-transparent'}
   `;
   
@@ -60,17 +88,29 @@ export function PasswordEntryList({
     };
   };
 
+  const handleContextMenu = (e: React.MouseEvent, entry: PasswordEntry) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, entry });
+  };
+
+  const handleClick = (e: React.MouseEvent, entry: PasswordEntry) => {
+    onSelect(entry, e);
+  };
+
   if (viewMode === 'grid') {
     return (
-      <div className="grid grid-cols-2 gap-3">
-        {entries.map((entry) => {
-          const isSelected = selectedId === entry.id;
-          return (
-            <div
-              key={entry.id}
-              onClick={() => onSelect(entry)}
-              className={`${getBaseClasses(isSelected)} p-4`}
-              style={getBaseStyles(isSelected)}
+      <>
+        <div className="grid grid-cols-2 gap-3">
+          {entries.map((entry) => {
+            const isSelected = selectedId === entry.id || safeSelectedIds.includes(entry.id);
+            return (
+              <div
+                key={entry.id}
+                onClick={(e) => handleClick(e, entry)}
+                onContextMenu={(e) => handleContextMenu(e, entry)}
+                className={`${getBaseClasses(isSelected)} p-4`}
+                style={getBaseStyles(isSelected)}
               onMouseEnter={(e) => {
                 if (!isSelected) {
                   e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)';
@@ -138,21 +178,39 @@ export function PasswordEntryList({
             </div>
           );
         })}
-      </div>
+        </div>
+        {contextMenu && (
+          <PasswordContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            onClose={() => setContextMenu(null)}
+            onPin={() => onTogglePin?.(contextMenu.entry.id)}
+            onCopy={() => onCopyPassword?.(contextMenu.entry.password)}
+            onDelete={() => onDelete(contextMenu.entry.id)}
+            onMoveToFolder={onMoveToFolder ? (folderId) => onMoveToFolder(contextMenu.entry.id, folderId) : undefined}
+            onRemoveFromFolder={onRemoveFromFolder && contextMenu.entry.folderId ? () => onRemoveFromFolder(contextMenu.entry.id) : undefined}
+            isPinned={contextMenu.entry.pinned || false}
+            currentFolderId={contextMenu.entry.folderId || null}
+            folders={folders}
+          />
+        )}
+      </>
     );
   }
 
   if (viewMode === 'expanded') {
     return (
-      <div className="space-y-3">
-        {entries.map((entry) => {
-          const isSelected = selectedId === entry.id;
-          return (
-            <div
-              key={entry.id}
-              onClick={() => onSelect(entry)}
-              className={`${getBaseClasses(isSelected)} p-4`}
-              style={getBaseStyles(isSelected)}
+      <>
+        <div className="space-y-3">
+          {entries.map((entry) => {
+            const isSelected = selectedId === entry.id || safeSelectedIds.includes(entry.id);
+            return (
+              <div
+                key={entry.id}
+                onClick={(e) => handleClick(e, entry)}
+                onContextMenu={(e) => handleContextMenu(e, entry)}
+                className={`${getBaseClasses(isSelected)} p-4`}
+                style={getBaseStyles(isSelected)}
               onMouseEnter={(e) => {
                 if (!isSelected) {
                   e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)';
@@ -255,20 +313,38 @@ export function PasswordEntryList({
             </div>
           );
         })}
-      </div>
+        </div>
+        {contextMenu && (
+          <PasswordContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            onClose={() => setContextMenu(null)}
+            onPin={() => onTogglePin?.(contextMenu.entry.id)}
+            onCopy={() => onCopyPassword?.(contextMenu.entry.password)}
+            onDelete={() => onDelete(contextMenu.entry.id)}
+            onMoveToFolder={onMoveToFolder ? (folderId) => onMoveToFolder(contextMenu.entry.id, folderId) : undefined}
+            onRemoveFromFolder={onRemoveFromFolder && contextMenu.entry.folderId ? () => onRemoveFromFolder(contextMenu.entry.id) : undefined}
+            isPinned={contextMenu.entry.pinned || false}
+            currentFolderId={contextMenu.entry.folderId || null}
+            folders={folders}
+          />
+        )}
+      </>
     );
   }
 
   return (
-    <div className="space-y-2">
-      {entries.map((entry) => {
-        const isSelected = selectedId === entry.id;
-        return (
-          <div
-            key={entry.id}
-            onClick={() => onSelect(entry)}
-            className={`${getBaseClasses(isSelected)} p-3`}
-            style={getBaseStyles(isSelected)}
+    <>
+      <div className="space-y-2">
+        {entries.map((entry) => {
+          const isSelected = selectedId === entry.id || safeSelectedIds.includes(entry.id);
+          return (
+            <div
+              key={entry.id}
+              onClick={(e) => handleClick(e, entry)}
+              onContextMenu={(e) => handleContextMenu(e, entry)}
+              className={`${getBaseClasses(isSelected)} p-3`}
+              style={getBaseStyles(isSelected)}
             onMouseEnter={(e) => {
               if (!isSelected) {
                 e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)';
@@ -366,6 +442,22 @@ export function PasswordEntryList({
           </div>
         );
       })}
-    </div>
+      </div>
+      {contextMenu && (
+        <PasswordContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onPin={() => onTogglePin?.(contextMenu.entry.id)}
+          onCopy={() => onCopyPassword?.(contextMenu.entry.password)}
+          onDelete={() => onDelete(contextMenu.entry.id)}
+          onMoveToFolder={onMoveToFolder ? (folderId) => onMoveToFolder(contextMenu.entry.id, folderId) : undefined}
+          onRemoveFromFolder={onRemoveFromFolder && contextMenu.entry.folderId ? () => onRemoveFromFolder(contextMenu.entry.id) : undefined}
+          isPinned={contextMenu.entry.pinned || false}
+          currentFolderId={contextMenu.entry.folderId || null}
+          folders={folders}
+        />
+      )}
+    </>
   );
 }

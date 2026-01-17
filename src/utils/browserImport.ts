@@ -22,7 +22,6 @@ export function parseCSV(csvContent: string): BrowserPassword[] {
     throw new Error('CSV file is too large. Maximum size is 10MB.');
   }
 
-  // Remove BOM if present and normalize line endings
   let normalizedContent = csvContent.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   
   const lines = normalizedContent.split('\n').map(line => line.trim()).filter(line => line.length > 0);
@@ -33,37 +32,27 @@ export function parseCSV(csvContent: string): BrowserPassword[] {
     throw new Error('CSV file contains too many entries. Maximum is 100,000 entries.');
   }
 
-  // Parse first line to check for headers
   const firstLineFields = parseCSVLine(lines[0]);
   let headers: string[] = [];
   let startIndex = 0;
 
-  // Normalize headers by trimming and lowercasing
   const normalizedHeaders = firstLineFields.map(h => h.trim().toLowerCase());
   
-  // Check what columns we have in the header
   const hasUrl = normalizedHeaders.some(h => h.includes('url') || h.includes('website'));
   const hasUsername = normalizedHeaders.some(h => h.includes('username') || h.includes('user') || h.includes('login'));
   const hasPassword = normalizedHeaders.some(h => h.includes('password') || h.includes('pass'));
   const hasName = normalizedHeaders.some(h => h.includes('name') || h.includes('title'));
 
-  // Detect header format - Firefox, Chrome, or generic
-  // Firefox: url, username, password, httpRealm, ...
-  // Chrome: name,url,username,password
   if (hasUrl && (hasUsername || hasPassword)) {
-    // Has headers - Firefox or Chrome format
     headers = normalizedHeaders;
     startIndex = 1;
   } else if (hasName && hasUrl) {
-    // Chrome format with name
     headers = normalizedHeaders;
     startIndex = 1;
   } else if (firstLineFields.length >= 3 && (hasUrl || hasUsername || hasPassword)) {
-    // Might have headers but detection is uncertain - try treating as headers
     headers = normalizedHeaders;
     startIndex = 1;
   } else {
-    // No headers detected - assume: name,url,username,password
     headers = ['name', 'url', 'username', 'password'];
     startIndex = 0;
   }
@@ -78,7 +67,7 @@ export function parseCSV(csvContent: string): BrowserPassword[] {
     const fields = parseCSVLine(line);
     if (fields.length < 2) {
       skippedCount++;
-      continue; // Need at least url and username or password
+      continue;
     }
 
     try {
@@ -89,13 +78,11 @@ export function parseCSV(csvContent: string): BrowserPassword[] {
         password: '',
       };
 
-      // Find column indices for key fields
       const urlIndex = headers.findIndex(h => h && (h.includes('url') || h.includes('website')));
       const usernameIndex = headers.findIndex(h => h && (h.includes('username') || h.includes('login') || (h.includes('user') && !h.includes('url'))));
       const passwordIndex = headers.findIndex(h => h && (h.includes('password') || h.includes('pass')));
       const nameIndex = headers.findIndex(h => h && (h.includes('name') || h.includes('title')));
 
-      // Map fields to entry - prioritize explicit column mapping
       for (let index = 0; index < Math.min(headers.length, fields.length); index++) {
         const header = headers[index];
         if (!header) continue;
@@ -103,7 +90,6 @@ export function parseCSV(csvContent: string): BrowserPassword[] {
         const rawValue = fields[index]?.trim() || '';
         const value = sanitizeImportField(rawValue, 1000);
         
-        // Use explicit indices if found, otherwise fall back to header matching
         if (index === urlIndex && urlIndex >= 0) {
           if (value) {
             const validatedUrl = validateUrl(value);
@@ -125,7 +111,6 @@ export function parseCSV(csvContent: string): BrowserPassword[] {
         } else if (index === nameIndex && nameIndex >= 0) {
           if (value) entry.name = value;
         } else {
-          // Fallback to header matching for other fields
           if (header.includes('name') || header.includes('title')) {
             if (value && !entry.name) entry.name = value;
           } else if (header.includes('url') || header.includes('website')) {
@@ -143,7 +128,6 @@ export function parseCSV(csvContent: string): BrowserPassword[] {
         }
       }
 
-      // Generate name from URL or username if not set
       if (!entry.name) {
         if (entry.url) {
           try {
@@ -157,17 +141,13 @@ export function parseCSV(csvContent: string): BrowserPassword[] {
         }
       }
 
-      // Accept entries with at least password (username can be empty for some sites)
-      // But we need at least a password to be useful
       if (entry.password) {
-        // If username is missing, set it to empty string (some sites don't use usernames)
         if (!entry.username) {
           entry.username = '';
         }
         entries.push(entry);
       } else {
         skippedCount++;
-        // Log why entry was skipped for debugging
         if (entries.length === 0 && skippedCount <= 3) {
           console.log('Skipped entry (no password):', {
             line: i + 1,
@@ -185,7 +165,6 @@ export function parseCSV(csvContent: string): BrowserPassword[] {
     }
   }
 
-  // Log debug info when no entries found (always log for debugging)
   if (entries.length === 0) {
     const firstDataLine = lines[startIndex];
     const firstDataFields = firstDataLine ? parseCSVLine(firstDataLine) : [];

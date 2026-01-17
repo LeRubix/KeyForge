@@ -9,12 +9,23 @@ export interface PasswordEntry {
   url?: string;
   notes?: string;
   pinned?: boolean;
+  folderId?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PasswordFolder {
+  id: string;
+  name: string;
+  color: string;
+  expanded: boolean;
   createdAt: number;
   updatedAt: number;
 }
 
 export interface Vault {
   passwords: PasswordEntry[];
+  folders?: PasswordFolder[];
   version: string;
   recoveryPhraseHash?: string;
   entries?: PasswordEntry[];
@@ -96,9 +107,39 @@ export async function readVaultWithRecovery(
   masterPassword: string,
   recoveryKey?: string
 ): Promise<Vault | null> {
+  if (recoveryKey && (!masterPassword || masterPassword === recoveryKey)) {
+    try {
+      let encryptedData: string | null = null;
+      
+      if (isElectron() && window.electronAPI) {
+        encryptedData = localStorage.getItem('keyforge_vault_recovery_backup');
+      } else {
+        encryptedData = localStorage.getItem('keyforge_vault_recovery_backup');
+      }
+      
+      if (encryptedData) {
+        const encrypted: EncryptedData = JSON.parse(encryptedData);
+        const decrypted = await decrypt(encrypted, recoveryKey);
+        const vault = JSON.parse(decrypted) as Vault;
+        
+        clearSensitiveString(decrypted);
+        
+        if (vault.entries && !vault.passwords) {
+          vault.passwords = vault.entries;
+          delete vault.entries;
+        }
+        
+        return vault;
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
+  
   let vault = await readVault(masterPassword);
   
-  if (!vault && recoveryKey) {
+  if (!vault && recoveryKey && masterPassword !== recoveryKey) {
     try {
       let encryptedData: string | null = null;
       
@@ -139,6 +180,7 @@ export async function vaultExists(): Promise<boolean> {
 export function createEmptyVault(): Vault {
   return {
     passwords: [],
+    folders: [],
     version: VAULT_VERSION,
   };
 }

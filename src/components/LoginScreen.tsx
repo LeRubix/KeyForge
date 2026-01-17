@@ -113,7 +113,7 @@ export function LoginScreen({ onLogin, isNewUser, onNewUserCreated }: LoginScree
           }
           
           const { readVaultWithRecovery } = await import('@/utils/storage');
-          const vault = await readVaultWithRecovery(recoveryKey, recoveryKey);
+          const vault = await readVaultWithRecovery('', recoveryKey);
           
           if (vault) {
             const { clearRateLimit } = await import('@/utils/security');
@@ -356,8 +356,9 @@ export function LoginScreen({ onLogin, isNewUser, onNewUserCreated }: LoginScree
                   onContextMenu={handleContextMenu}
                   className="input-field pl-10 pr-10"
                   placeholder={t('login.passwordPlaceholder')}
-                  required
-                  autoFocus
+                  required={!useRecoveryPhrase}
+                  disabled={useRecoveryPhrase}
+                  autoFocus={!useRecoveryPhrase}
                 />
                 <button
                   type="button"

@@ -223,8 +223,27 @@ export function SettingsDialog({ onClose, masterPassword, onLogout }: SettingsDi
     }
   };
 
-  const handleDownloadUpdate = () => {
-    if (updateInfo?.url) {
+  const handleDownloadInstaller = () => {
+    if (!updateInfo) return;
+    const installer = updateInfo.assets.find(a => 
+      a.name.toLowerCase().includes('.exe') && 
+      !a.name.toLowerCase().includes('portable')
+    );
+    if (installer) {
+      window.open(installer.browser_download_url, '_blank', 'noopener,noreferrer');
+    } else {
+      window.open(updateInfo.url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleDownloadPortable = () => {
+    if (!updateInfo) return;
+    const portable = updateInfo.assets.find(a => 
+      a.name.toLowerCase().includes('portable')
+    );
+    if (portable) {
+      window.open(portable.browser_download_url, '_blank', 'noopener,noreferrer');
+    } else {
       window.open(updateInfo.url, '_blank', 'noopener,noreferrer');
     }
   };
@@ -406,7 +425,15 @@ export function SettingsDialog({ onClose, masterPassword, onLogout }: SettingsDi
               <h4 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{t('settings.colorScheme')}</h4>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              {(['blue', 'cyan', 'green', 'navy', 'orange', 'pink', 'purple', 'red', 'teal', 'yellow'] as ColorScheme[]).sort((a, b) => a.localeCompare(b)).map((scheme) => {
+              {(() => {
+                const schemes: ColorScheme[] = ['blue', 'cyan', 'green', 'navy', 'orange', 'pink', 'purple', 'red', 'teal', 'yellow'];
+                const sorted = schemes.sort((a, b) => {
+                  if (a === 'cyan') return -1;
+                  if (b === 'cyan') return 1;
+                  return a.localeCompare(b);
+                });
+                return sorted;
+              })().map((scheme) => {
                 const colors = getThemeColorsByMode(colorMode, scheme);
                 const isGradient = scheme === 'cyan';
                 return (
@@ -665,13 +692,35 @@ export function SettingsDialog({ onClose, masterPassword, onLogout }: SettingsDi
                   <div className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
                     {t('settings.update.description')}
                   </div>
-                  <button
-                    onClick={handleDownloadUpdate}
-                    className="btn-primary text-sm"
-                  >
-                    <Download className="w-4 h-4 inline mr-2" />
-                    {t('settings.update.download')}
-                  </button>
+                  <div className="flex gap-2">
+                    {updateInfo.assets.some(a => a.name.toLowerCase().includes('.exe') && !a.name.toLowerCase().includes('portable')) && (
+                      <button
+                        onClick={handleDownloadInstaller}
+                        className="btn-primary text-sm flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        {t('settings.update.downloadInstaller')}
+                      </button>
+                    )}
+                    {updateInfo.assets.some(a => a.name.toLowerCase().includes('portable')) && (
+                      <button
+                        onClick={handleDownloadPortable}
+                        className="btn-secondary text-sm flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        {t('settings.update.downloadPortable')}
+                      </button>
+                    )}
+                    {!updateInfo.assets.some(a => a.name.toLowerCase().includes('.exe')) && (
+                      <button
+                        onClick={() => window.open(updateInfo.url, '_blank', 'noopener,noreferrer')}
+                        className="btn-primary text-sm flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        {t('settings.update.download')}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

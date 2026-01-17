@@ -3,6 +3,11 @@ export interface UpdateInfo {
   url: string;
   releaseNotes?: string;
   publishedAt: string;
+  assets: Array<{
+    name: string;
+    browser_download_url: string;
+    size: number;
+  }>;
 }
 
 export interface GitHubRelease {
@@ -112,6 +117,7 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateInf
       url: asset ? asset.browser_download_url : release.html_url,
       releaseNotes: release.body || '',
       publishedAt: release.published_at,
+      assets: release.assets,
     };
   } catch (error) {
     console.error('Failed to check for updates:', error);
