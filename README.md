@@ -24,7 +24,11 @@ KeyForge is a secure password manager that runs on your computer. It helps you s
 ## What is KeyForge?
 
 KeyForge is like a digital safe for your passwords. Instead of remembering dozens of different passwords, you only need to remember one master password. KeyForge stores all your other passwords safely and securely. <br>
-Do you use a browser that doesn't save your passwords, or even just multiple browsers? Have you ever wanted completely local highest-level encryption and robust security with no strings attached? Have you ever just wanted a central place on your pc to store passwords? and all of that for free? KeyForge hopes to be the answer to those questions, and more :)
+Do you use a browser that doesn't save your passwords, or even just multiple browsers? <br>
+Have you ever wanted completely local highest-level encryption and robust security with no strings attached? <br>
+Have you ever just wanted a central place on your pc to store passwords? <br>
+and all of that for free? <br>
+<b>KeyForge hopes to be the answer to those questions, and more</b> :)
 
 ## Key Features
 
