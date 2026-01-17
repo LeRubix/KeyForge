@@ -24,7 +24,11 @@ KeyForge is a secure password manager that runs on your computer. It helps you s
 ## What is KeyForge?
 
 KeyForge is like a digital safe for your passwords. Instead of remembering dozens of different passwords, you only need to remember one master password. KeyForge stores all your other passwords safely and securely. <br>
-Do you use a browser that doesn't save your passwords, or even just multiple browsers? Have you ever wanted completely local highest-level encryption and robust security with no strings attached? Have you ever just wanted a central place on your pc to store passwords? and all of that for free? KeyForge hopes to be the answer to those questions, and more :)
+Do you use a browser that doesn't save your passwords, or even just multiple browsers? <br>
+Have you ever wanted completely local highest-level encryption and robust security with no strings attached? <br>
+Have you ever just wanted a central place on your pc to store passwords? <br>
+and all of that for free? <br>
+<b>KeyForge hopes to be the answer to those questions, and more</b> :)
 
 ## Key Features
 
@@ -47,7 +51,7 @@ KeyForge uses the strongest encryption available to protect your passwords:
 - Fast and responsive
 - Search through your passwords instantly
 - See how strong your passwords are with the strength meter
-- Multi-language support: English 🇬🇧, Spanish 🇪🇸, German 🇩🇪, Japanese 🇯🇵, French 🇫🇷, Portuguese 🇵🇹, Ukrainian 🇺🇦, Polish 🇵🇱, Chinese 🇨🇳
+- Language support for: English 🇬🇧, Spanish 🇪🇸, German 🇩🇪, Japanese 🇯🇵, French 🇫🇷, Portuguese 🇵🇹, Ukrainian 🇺🇦, Polish 🇵🇱, Chinese 🇨🇳  *(all translations were done by AI, feel free to reach out about incorrect translations)*
 
 ### What You Can Do
 
@@ -385,6 +389,8 @@ If you want to help improve KeyForge:
 - Keep all security and subsequent features working correctly
 - Test your changes thoroughly
 - Update documentation when needed
+<br>
+Also, i'm open to new or updated translations, just make sure everything is translated properly :)
 
 
 Thank you for using KeyForge!
