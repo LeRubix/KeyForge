@@ -47,7 +47,7 @@ KeyForge uses the strongest encryption available to protect your passwords:
 - Fast and responsive
 - Search through your passwords instantly
 - See how strong your passwords are with the strength meter
-- Multi-language support: English 🇬🇧, Spanish 🇪🇸, German 🇩🇪, Japanese 🇯🇵, French 🇫🇷, Portuguese 🇵🇹, Ukrainian 🇺🇦, Polish 🇵🇱, Chinese 🇨🇳
+- Language support for: English 🇬🇧, Spanish 🇪🇸, German 🇩🇪, Japanese 🇯🇵, French 🇫🇷, Portuguese 🇵🇹, Ukrainian 🇺🇦, Polish 🇵🇱, Chinese 🇨🇳  *(all translations were done by AI, feel free to reach out about incorrect translations)*
 
 ### What You Can Do
 
@@ -385,6 +385,8 @@ If you want to help improve KeyForge:
 - Keep all security and subsequent features working correctly
 - Test your changes thoroughly
 - Update documentation when needed
+<br>
+Also, i'm open to new or updated translations, just make sure everything is translated properly :)
 
 
 Thank you for using KeyForge!
